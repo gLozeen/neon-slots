@@ -222,7 +222,8 @@ eventBus.on(EVENTS.UI_INIT, (options: setupUiOptions) => {
 
   const uiContainer = document.getElementById("uiContainer")!;
   const resizeUi = () => {
-    uiContainer.style.width = window.innerWidth - window.innerWidth * 0.02 + "px";
+    uiContainer.style.width =
+      window.innerWidth - window.innerWidth * 0.02 + "px";
   };
   resizeUi();
   window.addEventListener("resize", resizeUi);
