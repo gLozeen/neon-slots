@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/style.css" />
+    <title>PixiJS - Template</title>
+  </head>
+
+  <body>
+    <div id="app">
+      <canvas id="pixi-container"></div>
+    </div>
+    <div id="uiContainer" class="ui-container">
+      <div id="otherContainer" class="other-container">
+        <div class="img-container">
+          <img src="assets/ui/info-btn.webp" id="info" />
+          <img src="assets/ui/settings-btn.webp" id="settings" />
+        </div>
+        <div id="balanceContainer" class="balance-container">
+          Your balance:
+          <label id="balanceAmount" class="balance-amount"
+            >balance AMOUNT</label
+          >
+        </div>
+
+        <div id="betContainer" class="bet-container">
+          <div class="bet-display">
+            <div id="betLabel" class="bet-label">Total Bet</div>
+            <div id="betAmount" class="bet-amount">1</div>
+          </div>
+          <div class="bet-buttons">
+            <img
+              src="assets/ui/bet-button.webp"
+              id="buttonUp"
+              class="bet-button-up"
+            />
+            <img
+              src="assets/ui/bet-button.webp"
+              id="buttonDown"
+              class="bet-button"
+            />
+          </div>
+        </div>
+      </div>
+      
+          <div class="spin-container"><img src="assets/ui/spin-btn.webp" id="spin" class="spin-button"></div>
+      <div id="autoplayContainer" class="autoplay-container">
+        <img
+          src="assets/ui/autospin-btn.webp"
+          id="autoplay"
+          class="autoplay-button"
+        />
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
