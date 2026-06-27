@@ -242,7 +242,6 @@ eventBus.on(EVENTS.UI_INIT, (options: setupUiOptions) => {
     },
   );
 
-  // @ts-ignore
   eventBus.on(EVENTS.info, (_message: HTMLElement) => {
     const background = new Graphics();
     background
@@ -250,6 +249,8 @@ eventBus.on(EVENTS.UI_INIT, (options: setupUiOptions) => {
       .fill({ color: 0x071c06, alpha: 1 });
     background.eventMode = "static";
     background.alpha = 0;
+
+    console.log(_message);
 
     const textContainer = new BitmapText({
       text: options.gameInfo,
@@ -304,8 +305,8 @@ eventBus.on(EVENTS.UI_INIT, (options: setupUiOptions) => {
       currentlyOpened = EVENTS.info;
     }
   });
-  // @ts-ignore
   eventBus.on(EVENTS.settings, (_message: HTMLElement) => {
+    console.log(_message);
     const found = find(options.app.stage, "background");
     const background = new Graphics();
     background
