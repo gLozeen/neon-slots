@@ -242,7 +242,7 @@ eventBus.on(EVENTS.UI_INIT, (options: setupUiOptions) => {
     },
   );
 
-  eventBus.on(EVENTS.info, (message: HTMLElement) => {
+  eventBus.on(EVENTS.info, (_message: HTMLElement) => {
     const background = new Graphics();
     background
       .rect(0, 0, options.app.screen.width, options.app.screen.height)
@@ -304,7 +304,7 @@ eventBus.on(EVENTS.UI_INIT, (options: setupUiOptions) => {
     }
   });
 
-  eventBus.on(EVENTS.settings, (message: HTMLElement) => {
+  eventBus.on(EVENTS.settings, (_message: HTMLElement) => {
     const found = find(options.app.stage, "background");
     const background = new Graphics();
     background
@@ -380,5 +380,10 @@ eventBus.on(EVENTS.UI_INIT, (options: setupUiOptions) => {
   setAnimations("buttonUp", "assets/ui/bet-button");
   setAnimations("buttonDown", "assets/ui/bet-button");
   setAnimations("autoplay", "assets/ui/autospin-btn");
-  setButtonWithBusyState("spin", "assets/ui/spin-btn", EVENTS.spinStart, EVENTS.spinComplete);
+  setButtonWithBusyState(
+    "spin",
+    "assets/ui/spin-btn",
+    EVENTS.spinStart,
+    EVENTS.spinComplete,
+  );
 });

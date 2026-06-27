@@ -138,39 +138,35 @@ export class Slot {
       return "idle";
     },
     idle: async () => {
-      return new Promise<string>(async (resolve) => {
-        await new Promise<void>((resolve) => {
-          eventBus.on("btnSpinClick", async () => {
-            eventBus.emit(EVENTS.spinStart, {});
-            resolve();
-          });
+      await new Promise<void>((resolve) => {
+        eventBus.on("btnSpinClick", () => {
+          eventBus.emit(EVENTS.spinStart, {});
+          resolve();
         });
-        resolve("spin");
       });
+      return "spin";
     },
     spin: async () => {
-      return new Promise<string>(async (resolve) => {
-        this.winPresenter!.abort();
-        this.result = SlotMath.generateGrid(5, 3);
-        this.reelSet!.spin();
-        setTimeout(() => {
-          if (this.result)
-            this.reelSet!.setResult([
-              { visible: this.result[0] },
-              { visible: this.result[1] },
-              { visible: this.result[2] },
-              { visible: this.result[3] },
-              { visible: this.result[4] },
-            ]);
-        }, 500);
-        await new Promise<void>((resolve) => {
-          this.reelSet!.events.on("spin:complete", () => {
-            eventBus.emit(EVENTS.spinComplete, {});
-            resolve();
-          });
+      this.winPresenter!.abort();
+      this.result = SlotMath.generateGrid(5, 3);
+      this.reelSet!.spin();
+      setTimeout(() => {
+        if (this.result)
+          this.reelSet!.setResult([
+            { visible: this.result[0] },
+            { visible: this.result[1] },
+            { visible: this.result[2] },
+            { visible: this.result[3] },
+            { visible: this.result[4] },
+          ]);
+      }, 500);
+      await new Promise<void>((resolve) => {
+        this.reelSet!.events.on("spin:complete", () => {
+          eventBus.emit(EVENTS.spinComplete, {});
+          resolve();
         });
-        resolve("results");
       });
+      return "results";
     },
     results: async () => {
       const winResult = SlotMath.calculateWins(this.result!);
@@ -203,7 +199,7 @@ export class Slot {
     try {
       window.localStorage.setItem("musicVolume", value.toString());
       this.backgroundMusic.volume = value;
-    } catch (err: any) {
+    } catch (err) {
       console.log(err);
       this.backgroundMusic.volume = value;
     }
