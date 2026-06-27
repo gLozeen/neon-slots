@@ -242,6 +242,7 @@ eventBus.on(EVENTS.UI_INIT, (options: setupUiOptions) => {
     },
   );
 
+  // @ts-ignore
   eventBus.on(EVENTS.info, (_message: HTMLElement) => {
     const background = new Graphics();
     background
@@ -303,7 +304,7 @@ eventBus.on(EVENTS.UI_INIT, (options: setupUiOptions) => {
       currentlyOpened = EVENTS.info;
     }
   });
-
+  // @ts-ignore
   eventBus.on(EVENTS.settings, (_message: HTMLElement) => {
     const found = find(options.app.stage, "background");
     const background = new Graphics();
