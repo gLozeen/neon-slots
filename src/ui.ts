@@ -220,8 +220,12 @@ eventBus.on(EVENTS.UI_INIT, (options: setupUiOptions) => {
   console.log("Screen width:", options.app.screen.width);
   let currentlyOpened: string;
 
-  document.getElementById("uiContainer")!.style.width =
-    options.app.screen.width - options.app.screen.width * 0.02 + "px";
+  const uiContainer = document.getElementById("uiContainer")!;
+  const resizeUi = () => {
+    uiContainer.style.width = window.innerWidth - window.innerWidth * 0.02 + "px";
+  };
+  resizeUi();
+  window.addEventListener("resize", resizeUi);
 
   eventBus.on(
     EVENTS.backgroundActive,

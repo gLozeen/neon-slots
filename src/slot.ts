@@ -124,10 +124,22 @@ export class Slot {
         .ticker(this.app.ticker)
         .build();
 
-      this.reelSet.x = 400;
-      this.reelSet.y = 100;
+      const REEL_W = 5 * 140; // reelCount × symbolWidth
+      const REEL_H = 3 * 140; // visibleRows × symbolHeight
+      const UI_BAR_H = 140; // bottom UI bar height
+
+      const centerReelSet = () => {
+        this.reelSet!.x = (this.app!.screen.width - REEL_W) / 2;
+        this.reelSet!.y = (this.app!.screen.height - REEL_H - UI_BAR_H) / 2;
+      };
 
       this.app.stage.addChild(this.reelSet);
+      centerReelSet();
+
+      window.addEventListener("resize", () => {
+        this.app!.renderer.resize(window.innerWidth, window.innerHeight);
+        centerReelSet();
+      });
 
       this.winPresenter = new WinPresenter(this.reelSet, {
         stagger: 80,
