@@ -6,7 +6,7 @@
   "scripts": {
     "start": "npm run dev",
     "build": "npm run lint && tsc && vite build",
-    "lint": "eslint .",
+    "lint": "biome",
     "dev": "vite"
   },
   "dependencies": {
