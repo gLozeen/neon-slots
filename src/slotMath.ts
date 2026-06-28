@@ -1,4 +1,4 @@
-import { WinLine, WinResult } from "./types";
+import type { WinLine, WinResult } from "./types";
 
 export const PAYLINES: WinLine[] = [
   [1, 1, 1, 1, 1], // middle row
@@ -23,24 +23,24 @@ export class SlotMath {
 
   static calculatePayout(wins: WinResult[], betAmount: number): number {
     return wins.reduce((total, w) => {
-      const multiplier = this.payouts[w.symbol]?.[w.count] ?? 0;
+      const multiplier = SlotMath.payouts[w.symbol]?.[w.count] ?? 0;
       return total + betAmount * multiplier;
     }, 0);
   }
 
   static weightedRandom(): string {
-    const total = this.weights.reduce((sum, w) => sum + w, 0);
+    const total = SlotMath.weights.reduce((sum, w) => sum + w, 0);
     let r = Math.random() * total;
-    for (let i = 0; i < this.symbols.length; i++) {
-      r -= this.weights[i];
-      if (r <= 0) return this.symbols[i];
+    for (let i = 0; i < SlotMath.symbols.length; i++) {
+      r -= SlotMath.weights[i];
+      if (r <= 0) return SlotMath.symbols[i];
     }
-    return this.symbols[this.symbols.length - 1];
+    return SlotMath.symbols[SlotMath.symbols.length - 1];
   }
 
   static generateGrid(reels: number, rows: number): string[][] {
     return Array.from({ length: reels }, () =>
-      Array.from({ length: rows }, () => this.weightedRandom()),
+      Array.from({ length: rows }, () => SlotMath.weightedRandom()),
     );
   }
 

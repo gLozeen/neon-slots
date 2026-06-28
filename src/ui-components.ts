@@ -1,7 +1,7 @@
 import {
   BitmapText,
   Container,
-  FederatedPointerEvent,
+  type FederatedPointerEvent,
   Graphics,
   Sprite,
   Texture,

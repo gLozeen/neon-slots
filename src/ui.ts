@@ -1,8 +1,8 @@
 import gsap from "gsap";
 import {
-  Application,
+  type Application,
   BitmapText,
-  Container,
+  type Container,
   EventEmitter,
   Graphics,
 } from "pixi.js";

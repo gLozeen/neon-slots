@@ -1,20 +1,26 @@
 import { CRTFilter } from "pixi-filters";
 import {
-  ReelSet,
+  type ReelSet,
   ReelSetBuilder,
-  SpriteSymbol,
-  Win,
+  type Win,
   WinPresenter,
 } from "pixi-reels";
-import { Application, Assets, BitmapText } from "pixi.js";
+import { Application, Assets, BitmapText, type Texture } from "pixi.js";
 import { eventBus, EVENTS, find } from "./ui";
-import { Phase, PhaseHandler } from "./types";
+import type { Phase, PhaseHandler } from "./types";
 import { manifest } from "./assets";
 import { autorun, makeAutoObservable } from "mobx";
 import { SlotMath, PAYLINES } from "./slotMath";
 import { finances } from "./finances";
 import { CONFIG } from "./config";
 import { tickUpNumber } from "./utils";
+import { MySymbol } from "./mySymbol";
+export interface SpriteSymbolOptions {
+  /** Map of symbolId → Texture. */
+  textures: Record<string, Texture>;
+  /** Anchor point. Default: { x: 0.5, y: 0.5 }. */
+  anchor?: { x: number; y: number };
+}
 
 export class Slot {
   private app?: Application;
@@ -120,20 +126,30 @@ export class Slot {
         .visibleRows(CONFIG.rowAmount)
         .symbolSize(CONFIG.symbolWidth, CONFIG.symbolHeight)
         .symbols((r) => {
-          r.register("star", SpriteSymbol, { textures: { star: star } });
-          r.register("seven", SpriteSymbol, { textures: { seven: seven } });
-          r.register("bar", SpriteSymbol, { textures: { bar: bar } });
+          r.register("star", MySymbol, {
+            textures: { star: star },
+          });
+          r.register("seven", MySymbol, {
+            textures: { seven: seven },
+          });
+          r.register("bar", MySymbol, {
+            textures: { bar: bar },
+          });
         })
         .ticker(this.app.ticker)
+        .symbolGap(10, 10)
         .build();
+
+      this.reelSet!.scale.set(CONFIG.scale);
 
       const REEL_W = CONFIG.reelAmount * CONFIG.symbolWidth;
       const REEL_H = CONFIG.rowAmount * CONFIG.symbolHeight;
       const UI_BAR_H = CONFIG.ui_bar_h;
 
       const centerReelSet = () => {
-        this.reelSet!.x = (this.app!.screen.width - REEL_W) / 2;
-        this.reelSet!.y = (this.app!.screen.height - REEL_H - UI_BAR_H) / 2;
+        this.reelSet!.x = (this.app!.screen.width - REEL_W * CONFIG.scale) / 2;
+        this.reelSet!.y =
+          (this.app!.screen.height - REEL_H * CONFIG.scale - UI_BAR_H) / 2;
       };
 
       this.app.stage.addChild(this.reelSet);
@@ -156,7 +172,6 @@ export class Slot {
         document.getElementById("betAmount")!.innerText =
           finances.betAmount.toString();
       });
-
       return "idle";
     },
     idle: async () => {
@@ -222,7 +237,8 @@ export class Slot {
 
         this.winPresenter!.show(wins);
         winAmount.x = this.reelSet!.x + this.reelSet!.width / 2;
-        winAmount.y = this.reelSet!.y + this.reelSet!.height + 20;
+        winAmount.y =
+          this.reelSet!.y + this.reelSet!.height + CONFIG.winAmountGap;
         this.app!.stage.addChild(winAmount);
         tickUpNumber({
           element: winAmount,

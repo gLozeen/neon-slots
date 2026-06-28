@@ -1,5 +1,5 @@
 import gsap from "gsap";
-import { BitmapText } from "pixi.js";
+import type { BitmapText } from "pixi.js";
 
 interface tickUpNumberOptions {
   element: BitmapText;
