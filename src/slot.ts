@@ -6,13 +6,15 @@ import {
   Win,
   WinPresenter,
 } from "pixi-reels";
-import { Application, Assets } from "pixi.js";
-import { eventBus, EVENTS } from "./ui";
+import { Text, Application, Assets, BitmapText } from "pixi.js";
+import { eventBus, EVENTS, find } from "./ui";
 import { Phase, PhaseHandler } from "./types";
 import { manifest } from "./assets";
 import { autorun, makeAutoObservable } from "mobx";
 import { SlotMath, PAYLINES } from "./slotMath";
 import { finances } from "./finances";
+import { CONFIG } from "./config";
+import { tickUpNumber } from "./utils";
 
 export class Slot {
   private app?: Application;
@@ -114,9 +116,9 @@ export class Slot {
       const bar = await Assets.load("assets/bar.png");
 
       this.reelSet = new ReelSetBuilder()
-        .reels(5)
-        .visibleRows(3)
-        .symbolSize(140, 140)
+        .reels(CONFIG.reelAmount)
+        .visibleRows(CONFIG.rowAmount)
+        .symbolSize(CONFIG.symbolWidth, CONFIG.symbolHeight)
         .symbols((r) => {
           r.register("star", SpriteSymbol, { textures: { star: star } });
           r.register("seven", SpriteSymbol, { textures: { seven: seven } });
@@ -125,9 +127,9 @@ export class Slot {
         .ticker(this.app.ticker)
         .build();
 
-      const REEL_W = 5 * 140; // reelCount × symbolWidth
-      const REEL_H = 3 * 140; // visibleRows × symbolHeight
-      const UI_BAR_H = 140; // bottom UI bar height
+      const REEL_W = CONFIG.reelAmount * CONFIG.symbolWidth;
+      const REEL_H = CONFIG.rowAmount * CONFIG.symbolHeight;
+      const UI_BAR_H = CONFIG.ui_bar_h;
 
       const centerReelSet = () => {
         this.reelSet!.x = (this.app!.screen.width - REEL_W) / 2;
@@ -143,9 +145,9 @@ export class Slot {
       });
 
       this.winPresenter = new WinPresenter(this.reelSet, {
-        stagger: 80,
+        stagger: 200,
         dimLosers: true,
-        cycles: 2,
+        cycles: 1,
       });
 
       autorun(() => {
@@ -167,12 +169,14 @@ export class Slot {
           finances.setBetAmount(finances.betAmount + 1);
         });
         eventBus.on(EVENTS.buttonDown, () => {
-          finances.setBetAmount(finances.betAmount + 1);
+          finances.setBetAmount(finances.betAmount - 1);
         });
       });
       return "spin";
     },
     spin: async () => {
+      const found = find(this.app!.stage, "winAmount");
+      if (found) this.app!.stage.removeChild(found);
       this.winPresenter!.abort();
       this.result = SlotMath.generateGrid(5, 3);
       this.reelSet!.spin();
@@ -195,6 +199,16 @@ export class Slot {
       return "results";
     },
     results: async () => {
+      const winAmount = new BitmapText({
+        text: "0",
+        style: {
+          fill: "#ffffff",
+          fontSize: 36,
+        },
+      });
+      winAmount.label = "winAmount";
+      winAmount.anchor = 0.5;
+
       const winResult = SlotMath.calculateWins(this.result!);
       const wins: Win[] = winResult.map((w) => ({
         cells: Array.from({ length: w.count }, (_, r) => ({
@@ -205,8 +219,20 @@ export class Slot {
       const totalWin = SlotMath.calculatePayout(winResult, finances.betAmount);
       if (totalWin > 0) {
         finances.addWin(totalWin);
+
+        this.winPresenter!.show(wins);
+        winAmount.x = this.reelSet!.x + this.reelSet!.width / 2;
+        winAmount.y = this.reelSet!.y + this.reelSet!.height + 20;
+        this.app!.stage.addChild(winAmount);
+        tickUpNumber({
+          element: winAmount,
+          targetValue: totalWin,
+          duration: 2,
+          step: 0.01,
+          decimals: 2,
+          ease: "power2.out",
+        });
       }
-      await this.winPresenter!.show(wins);
       return "idle";
     },
   };
