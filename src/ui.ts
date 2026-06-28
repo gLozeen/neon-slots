@@ -382,6 +382,31 @@ eventBus.on(EVENTS.UI_INIT, (options: setupUiOptions) => {
     }
   });
 
+  eventBus.on("btnSpinClick", () => {
+    const background = new Graphics();
+    background
+      .rect(0, 0, options.app.screen.width, options.app.screen.height)
+      .fill({ color: 0x071c06, alpha: 1 });
+    background.eventMode = "static";
+    background.alpha = 0;
+
+    const found = find(options.app.stage, "background");
+    console.log("sex", found);
+    if (found) {
+      if (currentlyOpened) {
+        gsap.to(found, {
+          alpha: 0,
+          duration: 0.3,
+          ease: "power1.in",
+          onComplete: () => {
+            console.log("sex");
+            options.app.stage.removeChild(found);
+          },
+        });
+      }
+    }
+  });
+
   setAnimations("info", "assets/ui/info-btn");
   setAnimations("settings", "assets/ui/settings-btn");
   setAnimations("buttonUp", "assets/ui/bet-button");
