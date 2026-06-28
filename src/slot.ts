@@ -6,7 +6,7 @@ import {
   Win,
   WinPresenter,
 } from "pixi-reels";
-import { Text, Application, Assets, BitmapText } from "pixi.js";
+import { Application, Assets, BitmapText } from "pixi.js";
 import { eventBus, EVENTS, find } from "./ui";
 import { Phase, PhaseHandler } from "./types";
 import { manifest } from "./assets";

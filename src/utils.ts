@@ -12,7 +12,7 @@ interface tickUpNumberOptions {
 
 export function tickUpNumber(options: tickUpNumberOptions) {
   let currentValue = 0;
-  let startTime = gsap.ticker.time;
+  const startTime = gsap.ticker.time;
   const easeFn = gsap.parseEase(options.ease);
 
   function update() {
