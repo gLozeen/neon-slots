@@ -123,4 +123,11 @@ body {
 .autoplay-button {
   background-color: rgba(40, 42, 126, 0.507);
   cursor: pointer;
+  transition: filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+.autoplay-button.active {
+  filter: brightness(1.6) saturate(1.4);
+  box-shadow: 0 0 12px 3px rgba(0, 255, 120, 0.7);
+  border-radius: 4px;
 }

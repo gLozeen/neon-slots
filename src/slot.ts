@@ -90,13 +90,32 @@ export class Slot {
 
       let wasActive = false;
 
+      const updateAutoplayBtn = () => {
+        document
+          .getElementById("autoplay")!
+          .classList.toggle("active", this.autoplayActive);
+      };
+
       eventBus.on(EVENTS.autoplay, () => {
-        this.setAutoplayActive(this.autoplayActive ? false : true);
+        this.setAutoplayActive(!this.autoplayActive);
         wasActive = this.autoplayActive;
+        updateAutoplayBtn();
+        eventBus.emit(
+          this.autoplayActive ? EVENTS.autoplayStart : EVENTS.autoplayStop,
+          {},
+        );
       });
 
       eventBus.on(EVENTS.backgroundInactive, () => {
+        const prevActive = this.autoplayActive;
         this.setAutoplayActive(wasActive);
+        updateAutoplayBtn();
+        if (prevActive !== this.autoplayActive) {
+          eventBus.emit(
+            this.autoplayActive ? EVENTS.autoplayStart : EVENTS.autoplayStop,
+            {},
+          );
+        }
       });
       const crtFilter = new CRTFilter({
         lineWidth: 2,
@@ -172,26 +191,53 @@ export class Slot {
         document.getElementById("betAmount")!.innerText =
           finances.betAmount.toString();
       });
+
       return "idle";
     },
     idle: async () => {
       await new Promise<void>((resolve) => {
-        eventBus.on(EVENTS.spin, () => {
+        if (this.autoplayActive) {
           finances.goForSpin();
           resolve();
-        });
-        eventBus.on(EVENTS.buttonUp, () => {
-          finances.setBetAmount(finances.betAmount + 1);
-        });
-        eventBus.on(EVENTS.buttonDown, () => {
-          finances.setBetAmount(finances.betAmount - 1);
-        });
+          return;
+        }
+
+        let resolved = false;
+        const done = () => {
+          if (resolved) return;
+          resolved = true;
+          eventBus.off(EVENTS.spin, onSpin);
+          eventBus.off(EVENTS.buttonUp, onUp);
+          eventBus.off(EVENTS.buttonDown, onDown);
+          eventBus.off(EVENTS.autoplay, onAutoplay);
+        };
+
+        const onSpin = () => {
+          finances.goForSpin();
+          done();
+          resolve();
+        };
+        const onUp = () => finances.setBetAmount(finances.betAmount + 1);
+        const onDown = () => finances.setBetAmount(finances.betAmount - 1);
+        const onAutoplay = () => {
+          if (this.autoplayActive) {
+            finances.goForSpin();
+            done();
+            resolve();
+          }
+        };
+
+        eventBus.on(EVENTS.spin, onSpin);
+        eventBus.on(EVENTS.buttonUp, onUp);
+        eventBus.on(EVENTS.buttonDown, onDown);
+        eventBus.on(EVENTS.autoplay, onAutoplay);
       });
       return "spin";
     },
     spin: async () => {
       const found = find(this.app!.stage, "winAmount");
       if (found) this.app!.stage.removeChild(found);
+
       this.winPresenter!.abort();
       this.result = SlotMath.generateGrid(5, 3);
       this.reelSet!.spin();

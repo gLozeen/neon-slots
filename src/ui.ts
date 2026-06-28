@@ -55,6 +55,8 @@ export enum EVENTS {
   buttonUp = "btnButtonUpClick",
   buttonDown = "btnButtonDownClick",
   autoplay = "btnAutoplayClick",
+  autoplayStart = "autoplayStart",
+  autoplayStop = "autoplayStop",
   spin = "btnSpinClick",
   backgroundActive = "backgroundActive",
   backgroundInactive = "backgroundInactive",
@@ -118,12 +120,17 @@ const setButtonWithBusyState = (
   baseSrc: string,
   startEvent: string,
   endEvent: string,
+  lockEvent?: string,
+  unlockEvent?: string,
 ) => {
   const element = document.getElementById(id)! as HTMLImageElement;
   const normalSrc = baseSrc + ".webp";
   const pressedSrc = baseSrc + "-p.webp";
   const hoverSrc = baseSrc + "-h.webp";
   let busy = false;
+  let locked = false;
+
+  const isBlocked = () => busy || locked;
 
   const tlHover = gsap.timeline({ paused: true });
   const tlDown = gsap.timeline({ paused: true });
@@ -132,23 +139,23 @@ const setButtonWithBusyState = (
   tlDown.to(element, { scale: 1, duration: 0.3, ease: "power2.in" });
 
   element.addEventListener("mouseenter", () => {
-    if (busy) return;
+    if (isBlocked()) return;
     tlHover.play();
     element.src = hoverSrc;
   });
   element.addEventListener("mouseleave", () => {
-    if (busy) return;
+    if (isBlocked()) return;
     tlHover.reverse();
     element.src = normalSrc;
   });
   element.addEventListener("mousedown", () => {
-    if (busy) return;
+    if (isBlocked()) return;
     tlDown.play();
     element.src = pressedSrc;
     eventBus.emit(EVENTS[id as keyof typeof EVENTS], { message: element });
   });
   element.addEventListener("mouseup", () => {
-    if (busy) return;
+    if (isBlocked()) return;
     tlDown.reverse();
     element.src = hoverSrc;
   });
@@ -161,9 +168,29 @@ const setButtonWithBusyState = (
 
   eventBus.on(endEvent, () => {
     busy = false;
-    element.style.cursor = "";
-    element.src = normalSrc;
+    if (!locked) {
+      element.style.cursor = "";
+      element.src = normalSrc;
+    }
   });
+
+  if (lockEvent) {
+    eventBus.on(lockEvent, () => {
+      locked = true;
+      element.style.cursor = "not-allowed";
+      element.src = pressedSrc;
+    });
+  }
+
+  if (unlockEvent) {
+    eventBus.on(unlockEvent, () => {
+      locked = false;
+      if (!busy) {
+        element.style.cursor = "";
+        element.src = normalSrc;
+      }
+    });
+  }
 };
 
 const setSettings = (
@@ -382,7 +409,7 @@ eventBus.on(EVENTS.UI_INIT, (options: setupUiOptions) => {
     }
   });
 
-  eventBus.on("btnSpinClick", () => {
+  eventBus.on("spin", () => {
     const background = new Graphics();
     background
       .rect(0, 0, options.app.screen.width, options.app.screen.height)
@@ -416,5 +443,7 @@ eventBus.on(EVENTS.UI_INIT, (options: setupUiOptions) => {
     "assets/ui/spin-btn",
     EVENTS.spin,
     EVENTS.spinComplete,
+    EVENTS.autoplayStart,
+    EVENTS.autoplayStop,
   );
 });
