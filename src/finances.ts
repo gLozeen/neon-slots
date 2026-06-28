@@ -11,13 +11,14 @@ export class Finances {
     this.betAmount = 1;
     this.balance = 1000;
   }
-  tapHandler() {
-    this.totalBet += this.betAmount;
-
-    this.balance -= this.betAmount;
-  }
   setBetAmount(newBet: number) {
     if (newBet > 0) this.betAmount = newBet;
+  }
+  goForSpin() {
+    this.balance = this.balance - this.betAmount;
+  }
+  addWin(amount: number) {
+    this.balance = this.balance + amount;
   }
 }
 export const finances = new Finances();

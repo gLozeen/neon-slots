@@ -10,8 +10,9 @@ import { Application, Assets } from "pixi.js";
 import { eventBus, EVENTS } from "./ui";
 import { Phase, PhaseHandler } from "./types";
 import { manifest } from "./assets";
-import { makeAutoObservable } from "mobx";
+import { autorun, makeAutoObservable } from "mobx";
 import { SlotMath, PAYLINES } from "./slotMath";
+import { finances } from "./finances";
 
 export class Slot {
   private app?: Application;
@@ -147,13 +148,26 @@ export class Slot {
         cycles: 2,
       });
 
+      autorun(() => {
+        document.getElementById("balanceAmount")!.innerText =
+          finances.balance.toString();
+        document.getElementById("betAmount")!.innerText =
+          finances.betAmount.toString();
+      });
+
       return "idle";
     },
     idle: async () => {
       await new Promise<void>((resolve) => {
-        eventBus.on("btnSpinClick", () => {
-          eventBus.emit(EVENTS.spinStart, {});
+        eventBus.on(EVENTS.spin, () => {
+          finances.goForSpin();
           resolve();
+        });
+        eventBus.on(EVENTS.buttonUp, () => {
+          finances.setBetAmount(finances.betAmount + 1);
+        });
+        eventBus.on(EVENTS.buttonDown, () => {
+          finances.setBetAmount(finances.betAmount + 1);
         });
       });
       return "spin";
@@ -182,15 +196,16 @@ export class Slot {
     },
     results: async () => {
       const winResult = SlotMath.calculateWins(this.result!);
-      // it creates an array of obects with property cells
-      // cells is an array of objects with reelIndex and rowIndex properties
       const wins: Win[] = winResult.map((w) => ({
         cells: Array.from({ length: w.count }, (_, r) => ({
           reelIndex: r,
           rowIndex: PAYLINES[w.lineIndex][r],
         })),
       }));
-      console.log(wins);
+      const totalWin = SlotMath.calculatePayout(winResult, finances.betAmount);
+      if (totalWin > 0) {
+        finances.addWin(totalWin);
+      }
       await this.winPresenter!.show(wins);
       return "idle";
     },

@@ -391,7 +391,6 @@ eventBus.on(EVENTS.UI_INIT, (options: setupUiOptions) => {
     background.alpha = 0;
 
     const found = find(options.app.stage, "background");
-    console.log("sex", found);
     if (found) {
       if (currentlyOpened) {
         gsap.to(found, {
@@ -415,7 +414,7 @@ eventBus.on(EVENTS.UI_INIT, (options: setupUiOptions) => {
   setButtonWithBusyState(
     "spin",
     "assets/ui/spin-btn",
-    EVENTS.spinStart,
+    EVENTS.spin,
     EVENTS.spinComplete,
   );
 });

@@ -15,6 +15,19 @@ export class SlotMath {
   static symbols: string[] = ["star", "bar", "seven"];
   static weights: number[] = [30, 15, 5];
 
+  static payouts: Record<string, Record<number, number>> = {
+    star: { 3: 2, 4: 5, 5: 10 },
+    bar: { 3: 5, 4: 20, 5: 50 },
+    seven: { 3: 25, 4: 100, 5: 500 },
+  };
+
+  static calculatePayout(wins: WinResult[], betAmount: number): number {
+    return wins.reduce((total, w) => {
+      const multiplier = this.payouts[w.symbol]?.[w.count] ?? 0;
+      return total + betAmount * multiplier;
+    }, 0);
+  }
+
   static weightedRandom(): string {
     const total = this.weights.reduce((sum, w) => sum + w, 0);
     let r = Math.random() * total;
