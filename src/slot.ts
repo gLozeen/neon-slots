@@ -10,11 +10,11 @@ import { eventBus, EVENTS, find } from "./ui";
 import type { Phase, PhaseHandler } from "./types";
 import { manifest } from "./assets";
 import { autorun, makeAutoObservable } from "mobx";
-import { SlotMath, PAYLINES } from "./slotMath";
+import { SlotMath, PAYLINES } from "./slot-math";
 import { finances } from "./finances";
 import { CONFIG } from "./config";
 import { tickUpNumber } from "./utils";
-import { MySymbol } from "./mySymbol";
+import { MySymbol } from "./my-symbol";
 export interface SpriteSymbolOptions {
   /** Map of symbolId → Texture. */
   textures: Record<string, Texture>;
