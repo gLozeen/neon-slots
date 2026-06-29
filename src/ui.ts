@@ -425,7 +425,6 @@ eventBus.on(EVENTS.UI_INIT, (options: setupUiOptions) => {
           duration: 0.3,
           ease: "power1.in",
           onComplete: () => {
-            console.log("sex");
             options.app.stage.removeChild(found);
           },
         });
