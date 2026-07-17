@@ -1,5 +1,5 @@
 import gsap from "gsap";
-import type { BitmapText } from "pixi.js";
+import type { BitmapText, Container } from "pixi.js";
 
 interface tickUpNumberOptions {
   element: BitmapText;
@@ -8,6 +8,10 @@ interface tickUpNumberOptions {
   step: number;
   decimals: number;
   ease: string;
+}
+
+export function find(container: Container, toFind: string) {
+  return container.children.find((child) => child.label == toFind);
 }
 
 export function tickUpNumber(options: tickUpNumberOptions) {

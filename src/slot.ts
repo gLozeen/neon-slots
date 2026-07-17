@@ -17,7 +17,7 @@ import { autorun, makeAutoObservable } from "mobx";
 import { SlotMath, PAYLINES } from "./slot-math";
 import { finances } from "./finances";
 import { CONFIG } from "./config";
-import { tickUpNumber } from "./utils";
+import { find, tickUpNumber } from "./utils";
 import { MySymbol } from "./my-symbol";
 import { mountHud, type BootedHud } from "@open-slot-ui/pixi";
 export class Slot {
@@ -209,6 +209,9 @@ export class Slot {
       return "spin";
     },
     spin: async () => {
+      const found = find(this.app!.stage, "winAmount");
+      if (found) this.app!.stage.removeChild(found);
+      
       this.hud!.ui.spin.busy();
       this.winPresenter!.abort();
       this.result = SlotMath.generateGrid(5, 3);
