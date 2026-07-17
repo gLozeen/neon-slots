@@ -5,31 +5,29 @@ import {
   type Win,
   WinPresenter,
 } from "pixi-reels";
-import { Application, Assets, BitmapText, type Texture } from "pixi.js";
-import { eventBus, EVENTS, find } from "./ui";
+import {
+  Application,
+  Assets,
+  BitmapText,
+  groupD8,
+  Texture,
+} from "pixi.js";
 import type { Phase, PhaseHandler } from "./types";
-import { manifest } from "./assets";
 import { autorun, makeAutoObservable } from "mobx";
 import { SlotMath, PAYLINES } from "./slot-math";
 import { finances } from "./finances";
 import { CONFIG } from "./config";
 import { tickUpNumber } from "./utils";
 import { MySymbol } from "./my-symbol";
-export interface SpriteSymbolOptions {
-  /** Map of symbolId → Texture. */
-  textures: Record<string, Texture>;
-  /** Anchor point. Default: { x: 0.5, y: 0.5 }. */
-  anchor?: { x: number; y: number };
-}
-
+import { mountHud, type BootedHud } from "@open-slot-ui/pixi";
 export class Slot {
   private app?: Application;
+  private hud?: BootedHud;
+  private _idleResolve?: () => void;
 
   private backgroundMusic: HTMLAudioElement = new Audio(
     "assets/sounds/main_ambient.mp3",
   );
-
-  private autoplayActive: boolean = false;
 
   private result?: string[][];
 
@@ -39,8 +37,6 @@ export class Slot {
 
   private phases: Record<Phase, PhaseHandler> = {
     load: async () => {
-      await Assets.init({ manifest: manifest });
-      await Assets.loadBundle(["ui"]);
       return "init";
     },
     init: async () => {
@@ -54,7 +50,66 @@ export class Slot {
         view: document.getElementById("pixi-container")! as HTMLCanvasElement,
       });
 
+      console.log(finances.betAmount);
+
       this.backgroundMusic.loop = true;
+
+      const betButtonIcon: Texture = await Assets.load(
+        "assets/ui/bet-button.webp",
+      );
+      const autoplayButton = await Assets.load("assets/ui/autospin-btn.webp");
+      const betPlusIcon = new Texture({
+        source: betButtonIcon.source,
+        frame: betButtonIcon.frame,
+        rotate: groupD8.W,
+      });
+
+      this.hud = mountHud(
+        this.app,
+        {
+          turbo: { modes: 2 },
+          autoplay: { mode: "options" },
+          spin: { press: "hold-to-spin" },
+          betLadder: { levels: [1, 2, 5, 10, 20], index: 1 },
+
+        },
+        {
+          icons: {
+            betPlus: betPlusIcon,
+            betMinus: betButtonIcon,
+            autoIdle: autoplayButton
+          },
+        },
+      );
+
+      this.hud.on("spinRequested", () => {
+        finances.goForSpin();
+        this._idleResolve?.();
+        this._idleResolve = undefined;
+      });
+
+      this.hud.on("autoplayStarted", () => {
+        finances.goForSpin();
+        this._idleResolve?.();
+        this._idleResolve = undefined;
+      });
+
+      this.hud.on("buttonActivated", ({ id }) => {
+        if (id === "bet-plus") finances.setBetAmount(finances.betAmount + 1);
+        if (id === "bet-minus") finances.setBetAmount(finances.betAmount - 1);
+        if(id == "mute") this.muteMusic();
+
+        console.log(finances.betAmount);
+      });
+
+      this.hud.on("valueChanged", ({id, value})=>{
+        if(id === "music") this.setMusicVolume(value);
+      })
+
+      autorun(() => {
+        this.hud!.setBalance(finances.balance);
+        this.hud!.setBet(finances.betAmount);
+      });
 
       document.addEventListener(
         "click",
@@ -67,56 +122,12 @@ export class Slot {
         this.backgroundMusic.volume = parseFloat(
           window.localStorage.getItem("musicVolume")!,
         );
+        if (this.hud) 
+          this.hud.ui.musicSlider.setNormalized(this.backgroundMusic.volume)
       } catch (err) {
         console.log(err);
         this.backgroundMusic.volume = 0.5;
       }
-      eventBus.emit(EVENTS.UI_INIT, {
-        app: this.app,
-        gameInfo: `you need to hit "SPIN" and win!`,
-        settingOptions: [
-          {
-            type: "slider",
-            label: "Volume",
-            value: this.getMusicVolume(),
-            eventName: "volume_change",
-          },
-        ],
-      });
-
-      eventBus.on("volume_change", (message) => {
-        this.setMusicVolume(message.volume);
-      });
-
-      let wasActive = false;
-
-      const updateAutoplayBtn = () => {
-        document
-          .getElementById("autoplay")!
-          .classList.toggle("active", this.autoplayActive);
-      };
-
-      eventBus.on(EVENTS.autoplay, () => {
-        this.setAutoplayActive(!this.autoplayActive);
-        wasActive = this.autoplayActive;
-        updateAutoplayBtn();
-        eventBus.emit(
-          this.autoplayActive ? EVENTS.autoplayStart : EVENTS.autoplayStop,
-          {},
-        );
-      });
-
-      eventBus.on(EVENTS.backgroundInactive, () => {
-        const prevActive = this.autoplayActive;
-        this.setAutoplayActive(wasActive);
-        updateAutoplayBtn();
-        if (prevActive !== this.autoplayActive) {
-          eventBus.emit(
-            this.autoplayActive ? EVENTS.autoplayStart : EVENTS.autoplayStop,
-            {},
-          );
-        }
-      });
       const crtFilter = new CRTFilter({
         lineWidth: 2,
         lineContrast: 0.3,
@@ -185,59 +196,20 @@ export class Slot {
         cycles: 1,
       });
 
-      autorun(() => {
-        document.getElementById("balanceAmount")!.innerText =
-          finances.balance.toString();
-        document.getElementById("betAmount")!.innerText =
-          finances.betAmount.toString();
-      });
-
       return "idle";
     },
     idle: async () => {
+      if (this.hud?.ui.autoplay.isActive) {
+        finances.goForSpin();
+        return "spin";
+      }
       await new Promise<void>((resolve) => {
-        if (this.autoplayActive) {
-          finances.goForSpin();
-          resolve();
-          return;
-        }
-
-        let resolved = false;
-        const done = () => {
-          if (resolved) return;
-          resolved = true;
-          eventBus.off(EVENTS.spin, onSpin);
-          eventBus.off(EVENTS.buttonUp, onUp);
-          eventBus.off(EVENTS.buttonDown, onDown);
-          eventBus.off(EVENTS.autoplay, onAutoplay);
-        };
-
-        const onSpin = () => {
-          finances.goForSpin();
-          done();
-          resolve();
-        };
-        const onUp = () => finances.setBetAmount(finances.betAmount + 1);
-        const onDown = () => finances.setBetAmount(finances.betAmount - 1);
-        const onAutoplay = () => {
-          if (this.autoplayActive) {
-            finances.goForSpin();
-            done();
-            resolve();
-          }
-        };
-
-        eventBus.on(EVENTS.spin, onSpin);
-        eventBus.on(EVENTS.buttonUp, onUp);
-        eventBus.on(EVENTS.buttonDown, onDown);
-        eventBus.on(EVENTS.autoplay, onAutoplay);
+        this._idleResolve = resolve;
       });
       return "spin";
     },
     spin: async () => {
-      const found = find(this.app!.stage, "winAmount");
-      if (found) this.app!.stage.removeChild(found);
-
+      this.hud!.ui.spin.busy();
       this.winPresenter!.abort();
       this.result = SlotMath.generateGrid(5, 3);
       this.reelSet!.spin();
@@ -253,10 +225,10 @@ export class Slot {
       }, 500);
       await new Promise<void>((resolve) => {
         this.reelSet!.events.on("spin:complete", () => {
-          eventBus.emit(EVENTS.spinComplete, {});
           resolve();
         });
       });
+      this.hud!.ui.spin.idle();
       return "results";
     },
     results: async () => {
@@ -295,6 +267,7 @@ export class Slot {
           ease: "power2.out",
         });
       }
+      this.hud!.reportRound(totalWin, finances.betAmount);
       return "idle";
     },
   };
@@ -329,8 +302,21 @@ export class Slot {
       return this.backgroundMusic.volume;
     }
   }
-
-  setAutoplayActive(value: boolean) {
-    this.autoplayActive = value;
+  muteMusic(){
+    try{
+    let prevValue = 0;
+    return (()=>{
+      if(prevValue == 0){
+        prevValue = this.backgroundMusic.volume;
+        this.setMusicVolume(0);
+      } else {
+        this.setMusicVolume(prevValue);
+        prevValue = 0;
+      }
+    })
+    }catch(err){
+      console.log(err);
+      return this.backgroundMusic.volume;
+    }
   }
 }
