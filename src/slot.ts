@@ -2,6 +2,7 @@ import { CRTFilter } from "pixi-filters";
 import {
   type ReelSet,
   ReelSetBuilder,
+  SpeedPresets,
   type Win,
   WinPresenter,
 } from "pixi-reels";
@@ -102,6 +103,11 @@ export class Slot {
         console.log(finances.betAmount);
       });
 
+      this.hud.on("turboChanged", ({ mode }) => {
+        this.reelSet?.setSpeed(mode === "off"? "normal": "turbo");
+        console.log("sex");
+      });
+
       this.hud.on("valueChanged", ({id, value})=>{
         if(id === "music") this.setMusicVolume(value);
       })
@@ -169,6 +175,9 @@ export class Slot {
         .ticker(this.app.ticker)
         .symbolGap(10, 10)
         .build();
+      
+      this.reelSet.speed.addProfile('turbo', SpeedPresets.TURBO);
+        
 
       this.reelSet!.scale.set(CONFIG.scale);
 
@@ -211,7 +220,7 @@ export class Slot {
     spin: async () => {
       const found = find(this.app!.stage, "winAmount");
       if (found) this.app!.stage.removeChild(found);
-      
+
       this.hud!.ui.spin.busy();
       this.winPresenter!.abort();
       this.result = SlotMath.generateGrid(5, 3);
