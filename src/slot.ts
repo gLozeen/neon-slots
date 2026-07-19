@@ -91,6 +91,7 @@ export class Slot {
         this._idleResolve = undefined;
       });
 
+
       this.hud.on("autoplayStarted", () => {
         finances.goForSpin();
         this._idleResolve?.();
@@ -101,12 +102,31 @@ export class Slot {
         if (id === "bet-plus") finances.setBetAmount(finances.betAmount + 1);
         if (id === "bet-minus") finances.setBetAmount(finances.betAmount - 1);
         if(id == "mute") this.muteMusic();
-
-        console.log(finances.betAmount);
       });
 
       this.hud.on("turboChanged", ({ mode }) => {
         this.reelSet?.setSpeed(mode === "off"? "normal": "turbo");
+      });
+
+      // Mobile fix: a touch tap that opens the settings panel also triggers a
+      // trailing synthetic "click" (browsers fire this for compatibility since
+      // the HUD button never calls preventDefault on pointerdown/up). That click
+      // lands on the now-visible backdrop and closes the panel instantly. Swallow
+      // the one click that follows an open.
+      this.hud.on("panelToggled", ({ id, open }) => {
+        if (id !== "settings-panel" || !open) return;
+        const swallowGhostClick = (e: MouseEvent) => {
+          e.stopPropagation();
+          e.preventDefault();
+        };
+        document.addEventListener("click", swallowGhostClick, {
+          capture: true,
+          once: true,
+        });
+        setTimeout(
+          () => document.removeEventListener("click", swallowGhostClick, true),
+          400,
+        );
       });
 
       this.hud.on("valueChanged", ({id, value})=>{
