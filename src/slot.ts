@@ -48,6 +48,8 @@ export class Slot {
         height: window.innerHeight,
         backgroundAlpha: 0,
         antialias: true,
+        resolution: window.devicePixelRatio || 1,
+        autoDensity: true,
         view: document.getElementById("pixi-container")! as HTMLCanvasElement,
       });
 
@@ -105,7 +107,6 @@ export class Slot {
 
       this.hud.on("turboChanged", ({ mode }) => {
         this.reelSet?.setSpeed(mode === "off"? "normal": "turbo");
-        console.log("sex");
       });
 
       this.hud.on("valueChanged", ({id, value})=>{
@@ -179,24 +180,32 @@ export class Slot {
       this.reelSet.speed.addProfile('turbo', SpeedPresets.TURBO);
         
 
-      this.reelSet!.scale.set(CONFIG.scale);
-
       const REEL_W = CONFIG.reelAmount * CONFIG.symbolWidth;
       const REEL_H = CONFIG.rowAmount * CONFIG.symbolHeight;
       const UI_BAR_H = CONFIG.ui_bar_h;
+      const REEL_MARGIN = CONFIG.reelMargin;
 
-      const centerReelSet = () => {
-        this.reelSet!.x = (this.app!.screen.width - REEL_W * CONFIG.scale) / 2;
+      const layoutReelSet = () => {
+        const availableW = this.app!.screen.width - REEL_MARGIN * 2;
+        const availableH =
+          this.app!.screen.height - UI_BAR_H - REEL_MARGIN * 2;
+        const scale = Math.min(
+          availableW / REEL_W,
+          availableH / REEL_H,
+          CONFIG.scale,
+        );
+        this.reelSet!.scale.set(scale);
+        this.reelSet!.x = (this.app!.screen.width - REEL_W * scale) / 2;
         this.reelSet!.y =
-          (this.app!.screen.height - REEL_H * CONFIG.scale - UI_BAR_H) / 2;
+          (this.app!.screen.height - REEL_H * scale - UI_BAR_H) / 2;
       };
 
       this.app.stage.addChild(this.reelSet);
-      centerReelSet();
+      layoutReelSet();
 
       window.addEventListener("resize", () => {
         this.app!.renderer.resize(window.innerWidth, window.innerHeight);
-        centerReelSet();
+        layoutReelSet();
       });
 
       this.winPresenter = new WinPresenter(this.reelSet, {

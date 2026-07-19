@@ -6,4 +6,5 @@ export const CONFIG = {
   rowAmount: 3,
   ui_bar_h: 140,
   scale: 0.8,
+  reelMargin: 40
 };
